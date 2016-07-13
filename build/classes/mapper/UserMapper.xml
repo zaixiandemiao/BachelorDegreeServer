@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mms.dao.IUserMapper">
+	<!-- 获取用户id -->
+	<select id="logIn" parameterType="String"
+		resultType="String">
+		select  user_id
+		from user_info a
+		where a.login_username = #{username} and a.passwd=#{password} and is_deleted != 1;		
+	</select>
+	<!-- 通过username获取用户信息 -->
+	<select id="findUserByUsername" parameterType="String" 
+	resultType="mms.bean.UserInfoBean">
+		select  user_id, login_username, real_name, passwd, passwd_salt, is_deleted,
+				is_locked, lock_id, user_type_id, gender, birthday
+		from user_info a
+		where a.login_username = #{username} and is_deleted != 1;
+	</select>
+	
+	<select id="findUserByUserid" parameterType="String" 
+	resultType="mms.bean.UserInfoBean">
+		select  user_id, login_username, real_name, passwd, passwd_salt, is_deleted,
+				is_locked, lock_id, user_type_id, gender, birthday
+		from user_info a
+		where a.user_id = #{userid} and is_deleted != 1;
+	</select>
+	
+	<!-- 插入一条Userinfo记录 -->
+	<insert id="insertUserInfo" parameterType="String">
+		insert into user_info(login_username, passwd, passwd_salt, is_deleted, is_locked, create_time)
+		values(#{username}, #{passwd}, #{passwd_salt}, 0, 0, now());
+	</insert>
+	
+	<update id="updateUser" parameterType="mms.dto.req.ModifyUserDtoReq">
+		update user_info
+		<set>
+			<if test="login_username != null and login_username != '' ">
+				login_username = #{login_username},
+			</if>
+			<if test="real_name != null and real_name != '' ">
+				real_name = #{real_name},
+			</if>
+			<if test="passwd != null and passwd != '' ">
+				passwd = #{passwd},
+			</if>
+			<if test="is_deleted != null and is_deleted != '' ">
+				is_deleted = #{is_deleted},
+			</if>
+			<if test="is_locked != null and is_locked != '' ">
+				is_locked = #{is_locked},
+			</if>
+			<if test="lock_id != null and lock_id != '' ">
+				lock_id = #{lock_id},
+			</if>
+			<if test="user_type_id != null and user_type_id != '' ">
+				user_type_id = #{user_type_id}
+			</if>
+		</set>
+		where user_id = #{user_id} and is_deleted = 0
+	</update>
+	
+	
+	<select id="getLessonListByUserId" parameterType="java.lang.String"
+		resultType="mms.bean.LessonBean">
+		select lesson_id, teacher_id, lesson_name, stu_count, deadline, subject_pattern,
+			attach_pattern, fix_pattern, email_account, email_pwd
+		from teacher_lesson_info
+		where teacher_id = #{userid} and is_deleted != 1
+	</select>
+	
+	<select id="getDelLessonListByUserId" parameterType="java.lang.String"
+		resultType="mms.bean.LessonBean">
+		select lesson_id, teacher_id, lesson_name, stu_count, deadline, subject_pattern,
+			attach_pattern, fix_pattern, email_account, email_pwd
+		from teacher_lesson_info
+		where teacher_id = #{userid} and is_deleted = 1
+	</select>
+	
+	<!-- 插入一条Userinfo记录 -->
+	<insert id="insertLesson">
+		insert into teacher_lesson_info(teacher_id, lesson_name, stu_count, deadline,
+			subject_pattern, attach_pattern, fix_pattern, email_account, email_pwd, is_deleted)
+		values(#{userid}, #{lesson_name}, #{stu_count}, #{deadline},
+			#{subject_pattern}, #{filename_pattern}, #{filefix_pattern}, #{email_account}, #{email_pwd}, 0);
+	</insert>
+	
+	<update id="updateLesson" parameterType="mms.dto.req.ModifyLessonDtoReq">
+		update teacher_lesson_info
+		<set>
+			<if test="teacher_id != null and teacher_id != '' ">
+				teacher_id = #{teacher_id},
+			</if>
+			<if test="lesson_name != null and lesson_name != '' ">
+				lesson_name = #{lesson_name},
+			</if>
+			<if test="stu_count != null and stu_count != '' ">
+				stu_count = #{stu_count},
+			</if>
+			<if test="deadline != null and deadline != '' ">
+				deadline = #{deadline},
+			</if>
+			<if test="subject_pattern != null and subject_pattern != '' ">
+				subject_pattern = #{subject_pattern},
+			</if>
+			<if test="attach_pattern != null and attach_pattern != '' ">
+				attach_pattern = #{attach_pattern},
+			</if>
+			<if test="fix_pattern != null and fix_pattern != '' ">
+				fix_pattern = #{fix_pattern},
+			</if>
+			<if test="email_account != null and email_account != '' ">
+				email_account = #{email_account},
+			</if>
+			<if test="email_pwd != null and email_pwd != '' ">
+				email_pwd = #{email_pwd}
+			</if>
+		</set>
+		where lesson_id = #{lesson_id} and is_deleted != 1
+	</update>
+	
+	<update id="delLessonListByIds">
+		update teacher_lesson_info
+		set is_deleted = 1
+		where teacher_id = #{userid}
+		and lesson_id in 
+		<foreach collection="list" index="index" item="item" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	
+	<update id="recoverLessonListByIds">
+		update teacher_lesson_info
+		set is_deleted = 0
+		where teacher_id = #{userid}
+		and lesson_id in 
+		<foreach collection="list" index="index" item="item" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	
+	<select id="getAllLessonWithinDeadline" resultType="mms.bean.LessonBean">
+		select lesson_id, teacher_id, lesson_name, stu_count, deadline, subject_pattern,
+			attach_pattern, fix_pattern, email_account, email_pwd
+		from  teacher_lesson_info
+		where deadline > now() and is_deleted != 1
+	</select>
+	
+	<select id="getSubjectOptions" resultType="mms.bean.SelectOptions">
+		select pattern_info as value, pattern_comment as name
+		from pattern_info
+		where pattern_type_id = 1 and (user_id = #{userid} or user_id is null)
+	</select>
+	<select id="getFileNameOptions" resultType="mms.bean.SelectOptions">
+		select pattern_info as value, pattern_comment as name
+		from pattern_info
+		where pattern_type_id = 2 and (user_id = #{userid} or user_id is null)
+	</select>
+	<select id="getFileFixOptions" resultType="mms.bean.SelectOptions">
+		select pattern_info as value, pattern_comment as name
+		from pattern_info
+		where pattern_type_id = 3 and (user_id = #{userid} or user_id is null)
+	</select>
+	
+	<!-- 插入一条Userinfo记录 -->
+	<insert id="insetPaperInfo">
+		insert into student_paper_info(lesson_id, handin_time, stu_email_addr, 
+		email_subject, attach_name, is_validate, create_time)
+		values(#{lesson_id}, #{handin_time}, #{stu_email_addr}, #{email_subject},
+			#{attach_name}, #{is_validate}, now() );
+	</insert>
+	
+	<select id="reportList" resultType="mms.bean.LessonReportBean">
+		select a.lesson_id as lesson_id,lesson_name,stu_count,deadline, IFNULL(b.stu_email_addr,0) as report_stu_count
+		from teacher_lesson_info a LEFT JOIN
+		(select lesson_id,count(DISTINCT(stu_email_addr)) as stu_email_addr from student_paper_info group by lesson_id) as b
+		on a.lesson_id = b.lesson_id 
+		where a.teacher_id = #{userid} and a.is_deleted != 1;
+	</select>
+	
+	<select id="reportInfo" resultType="mms.bean.StudentReportBean">
+		select count(item_id) as report_count,stu_email_addr, handin_time, email_subject, attach_name, is_validate from student_paper_info
+		where lesson_id = #{lesson_id}
+		group by stu_email_addr
+		ORDER BY handin_time DESC;
+	</select>
+	
+	<insert id="insertOption">
+		insert into pattern_info(pattern_type_id, pattern_info, pattern_comment, user_id, create_time)
+		values(#{pattern_type_id}, #{pattern_info}, #{pattern_comment}, #{user_id}, now());
+	</insert>
+	
+</mapper>
